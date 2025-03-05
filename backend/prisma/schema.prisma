@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(cuid())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  status            Boolean
+  username          String
+  lastName          String? // Nullable, если возможно пустое значение
+  firstName         String? // Nullable, если возможно пустое значение
+  password          String
+  token             String?
+  avatar            String?
+  content           Content[]
+  likes             Like[]
+  comments          Comment[]
+  userSubscriptions UserSubscription[] @relation("UserSubscriptionSubscriber") // Подписчики
+  subscribedTo      UserSubscription[] @relation("UserSubscriptionSubscribedTo") // Кому подписан
+  Views             Views[]
+}
+
+model Content {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  status       Boolean
+  title        String
+  desc         String?
+  file         String         @unique
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  comments     Comment[]
+  likes        Like[]
+  filesContent FilesContent[]
+  Views        Views[]
+}
+
+model Views {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status    Boolean
+  contentId String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   Content  @relation(fields: [contentId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status    Boolean
+  userId    String
+  contentId String
+  isLike    Boolean
+  user      User     @relation(fields: [userId], references: [id])
+  content   Content  @relation(fields: [contentId], references: [id])
+}
+
+model Files {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  status       Boolean
+  images       String
+  size         Int // Тип размера лучше изменить на Int
+  type         String
+  filesContent FilesContent[]
+}
+
+model FilesContent {
+  filesId     String
+  contentFile String
+  files       Files   @relation(fields: [filesId], references: [id])
+  content     Content @relation(fields: [contentFile], references: [file])
+
+  @@id([filesId, contentFile])
+}
+
+model Comment {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  status        Boolean
+  userId        String
+  contentId     String
+  message       String
+  parentId      String?
+  user          User      @relation(fields: [userId], references: [id])
+  content       Content   @relation(fields: [contentId], references: [id])
+  parentComment Comment?  @relation("ParentComment", fields: [parentId], references: [id])
+  replies       Comment[] @relation("ParentComment")
+}
+
+model UserSubscription {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  status         Boolean
+  subscriberId   String
+  subscribedToId String
+  subscriber     User     @relation("UserSubscriptionSubscriber", fields: [subscriberId], references: [id])
+  subscribedTo   User     @relation("UserSubscriptionSubscribedTo", fields: [subscribedToId], references: [id])
+}
